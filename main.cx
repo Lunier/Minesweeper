@@ -10,7 +10,7 @@ import "os"
 var once bool
 
 //amount of mines on the map
-var MINES i32 = 6
+var MINES i32 = 60
 
 //global texture
 var defaultTex i32
@@ -274,7 +274,7 @@ func initNumbers()(){
 		{
 			number = checkNeighbours(i,j)
 			printf("current number: %d   @ line: %d   column: %d\n",number,i,j)
-			//setNumber(i,j,number)
+			setNumber(i,j,number)
 		}
 	}
 }
@@ -285,7 +285,7 @@ func checkNeighbours(y i32, x i32)(counter i32){
 		printf("mine\n")
 		counter = i32.sub(0,1)
 		i32.print(counter)
-		return counter
+		return
 	}
 	
 	var yTemp i32 = y
@@ -319,6 +319,7 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	
 	
 	//check left,right neighbours
+	yTemp = y
 	xTemp = i32.sub(x,1)
 	if i32.gt(xTemp,-1){
 		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
@@ -334,6 +335,7 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	
 	
 	//check bottom middle,left,right neighbours
+	xTemp = x
 	yTemp = i32.add(y,1)
 	if i32.gt(yTemp,-1){
 		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
