@@ -1,6 +1,6 @@
 package main
 
-import "stuff"
+import "dependecies"
 import "gl"
 import "glfw"
 import "gltext"
@@ -54,8 +54,9 @@ var CELLS_HEIGHT_PX f32 = 0.0
 var CELLS_WIDTH_SC f32 = 0.0
 var CELLS_HEIGHT_SC f32 = 0.0
 
-var gamefield [20][20]Cell
+var gamefield [20][20]dependecies.Cell
 
+var mousePosition dependecies.Position2D
 
 func initGlfw(window str) () {
 
@@ -143,15 +144,15 @@ func initGamefield()(){
    Output       : cell(Cell)  = return newCell
    Desctription : initializes a cell
 */
-func initCell(line i32, column i32, tex i32) (cell stuff.Cell) {
-    var pos stuff.Position2D
+func initCell(line i32, column i32, tex i32) (cell dependecies.Cell) {
+    var pos dependecies.Position2D
     pos = indexToPosition(line,column)
 
-    var dimension stuff.Dimension2D
-    dimension = stuff.newDimension2D(CELLS_HEIGHT_PX,CELLS_WIDTH_PX)
+    var dimension dependecies.Dimension2D
+    dimension = dependecies.newDimension2D(CELLS_HEIGHT_PX,CELLS_WIDTH_PX)
 
-    var cell stuff.Cell
-    cell = stuff.newCell(pos,dimension,tex)
+    var cell dependecies.Cell
+    cell = dependecies.newCell(pos,dimension,tex)
 
     return cell
 }
@@ -162,11 +163,11 @@ func initCell(line i32, column i32, tex i32) (cell stuff.Cell) {
    Output       : pos(Position2D)  = return newPosition
    Desctription : Calculates the screen position according to the line and column -> between -1 and 1
 */
-func indexToPosition (line i32, column i32) (pos stuff.Position2D){
+func indexToPosition (line i32, column i32) (pos dependecies.Position2D){
     var x f32 = f32.add(f32.add(-1.0, f32.mul(i32.f32(column),CELLS_WIDTH_SC)),f32.div(CELLS_WIDTH_SC,2.0))
     var y f32 = f32.sub(f32.sub( 1.0, f32.mul(i32.f32(line),CELLS_HEIGHT_SC)), f32.div(CELLS_HEIGHT_SC,2.0))
-    var pos stuff.Position2D
-    pos = stuff.newPosition2D(x,y,column,line)
+    var pos dependecies.Position2D
+    pos = dependecies.newPosition2D(x,y,column,line)
 
     return pos
 }
@@ -184,7 +185,7 @@ func drawBoard()(){
     {
 		for j=0; j < CELLS_X; j++
 		{
-			drawCell(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].activeTexture)
+			drawCell(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].currTexture)
 		}
     }
 }
@@ -194,7 +195,7 @@ func drawBoard()(){
    Output       : 
    Desctription : prints the gamefield to the Screen
 */
-func drawPassiveTexture()(){
+func drawActiveTexture()(){
     var i i32
     var j i32
 
@@ -202,7 +203,7 @@ func drawPassiveTexture()(){
     {
 		for j=0; j < CELLS_X; j++
 		{
-			drawCell(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].passiveTexture)
+			drawCell(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].activeTexture)
 		}
     }
 }
@@ -212,7 +213,7 @@ func drawPassiveTexture()(){
    	Output       : 
    	Desctription : prints the Cell to the Screen
 */
-func drawCell(pos stuff.Position2D, dim stuff.Dimension2D, tex i32) (){
+func drawCell(pos dependecies.Position2D, dim dependecies.Dimension2D, tex i32) (){
 	gl.LoadIdentity()
 	gl.BindTexture(gl.TEXTURE_2D, tex)
 
@@ -253,7 +254,7 @@ func initMines()() {
 			{
 				number = i32.rand(1,CELLS_Y*CELLS_X)
 				if (number <= 6) {
-					gamefield[i][j].passiveTexture = mineTex;
+					gamefield[i][j].activeTexture = mineTex;
 					mines--;
 					if i32.eq(mines,0) {
 						return
@@ -273,7 +274,7 @@ func initNumbers()(){
 		for j=0; j < CELLS_X; j++
 		{
 			number = checkNeighbours(i,j)
-			printf("current number: %d   @ line: %d   column: %d\n",number,i,j)
+			//printf("current number: %d   @ line: %d   column: %d\n",number,i,j)
 			setNumber(i,j,number)
 		}
 	}
@@ -281,10 +282,8 @@ func initNumbers()(){
 
 func checkNeighbours(y i32, x i32)(counter i32){
 	
-	if i32.eq(gamefield[y][x].passiveTexture,mineTex){
-		printf("mine\n")
+	if i32.eq(gamefield[y][x].activeTexture,mineTex){
 		counter = i32.sub(0,1)
-		i32.print(counter)
 		return
 	}
 	
@@ -296,14 +295,14 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	yTemp = i32.sub(y,1)
 	if i32.gt(yTemp,-1){
 		//check top middle
-		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+		if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 			counter = i32.add(counter,1)
 		}
 		
 		//check top left
 		xTemp = i32.sub(x,1)
 		if i32.gt(xTemp,-1){
-			if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+			if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 				counter = i32.add(counter,1)
 			}
 		}
@@ -311,7 +310,7 @@ func checkNeighbours(y i32, x i32)(counter i32){
 		//check top right
 		xTemp = i32.add(x,1)
 		if i32.lt(xTemp,20){
-			if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+			if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 				counter = i32.add(counter,1)
 			}
 		}
@@ -322,13 +321,13 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	yTemp = y
 	xTemp = i32.sub(x,1)
 	if i32.gt(xTemp,-1){
-		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+		if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 			counter = i32.add(counter,1)
 		}
 	}
 	xTemp = i32.add(x,1)
 	if i32.lt(xTemp,20){
-		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+		if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 			counter = i32.add(counter,1)
 		}
 	}
@@ -338,20 +337,20 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	xTemp = x
 	yTemp = i32.add(y,1)
 	if i32.gt(yTemp,-1){
-		if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+		if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 			counter = i32.add(counter,1)
 		}
 		
 		xTemp = i32.sub(x,1)
 		if i32.gt(xTemp,-1){
-			if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+			if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 				counter = i32.add(counter,1)
 			}
 		}
 		
 		xTemp = i32.add(x,1)
 		if i32.lt(xTemp,20){
-			if i32.eq(gamefield[yTemp][xTemp].passiveTexture,mineTex){
+			if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 				counter = i32.add(counter,1)
 			}
 		}
@@ -364,39 +363,39 @@ func checkNeighbours(y i32, x i32)(counter i32){
 func setNumber(y i32, x i32, number i32)() {
 	
 	if i32.eq(number,0){
-		gamefield[y][x].passiveTexture = defaultTex
+		gamefield[y][x].activeTexture = defaultTex
 	}
 	
 	if (number == 1){
-		gamefield[y][x].passiveTexture = oneTex
+		gamefield[y][x].activeTexture = oneTex
 	}
 	
 	if (number == 2){
-		gamefield[y][x].passiveTexture = twoTex
+		gamefield[y][x].activeTexture = twoTex
 	}
 	
 	if (number == 3){
-		gamefield[y][x].passiveTexture = threeTex
+		gamefield[y][x].activeTexture = threeTex
 	}
 	
 	if (number == 4){
-		gamefield[y][x].passiveTexture = fourTex
+		gamefield[y][x].activeTexture = fourTex
 	}
 	
 	if (number == 5){
-		gamefield[y][x].passiveTexture = fiveTex
+		gamefield[y][x].activeTexture = fiveTex
 	}
 	
 	if (number == 6){
-		gamefield[y][x].passiveTexture = sixTex
+		gamefield[y][x].activeTexture = sixTex
 	}
 	
 	if (number == 7){
-		gamefield[y][x].passiveTexture = sevenTex
+		gamefield[y][x].activeTexture = sevenTex
 	}
 	
 	if (number == 8){
-		gamefield[y][x].passiveTexture = eightTex
+		gamefield[y][x].activeTexture = eightTex
 	}
 	
 }
@@ -418,6 +417,32 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
     
 }
 
+func clickMouseEvents(window str, key i32, action i32, mods i32)(){
+	if i32.eq(key, glfw.MouseButtonLeft) {
+		if action == glfw.Press {
+			//printf("clicked")
+			revealField()
+		}
+	}
+}
+
+func revealField()(){
+	calculateMouseToCell()
+	var y i32 = mousePosition.realY
+	var x i32 = mousePosition.realX
+	gamefield[y][x].currTexture = gamefield[y][x].activeTexture
+}
+
+func calculateMouseToCell()(){
+	mousePosition.realX = i32.div(f32.i32(mousePosition.x),f32.i32(CELLS_WIDTH_PX))
+	mousePosition.realY = i32.div(f32.i32(mousePosition.y),f32.i32(CELLS_HEIGHT_PX))
+}
+
+func updateMousePosition(window str, xpos f64, ypos f64)(){
+	mousePosition.x = f64.f32(xpos)
+	mousePosition.y = f64.f32(ypos)
+}
+
 func main() {
 
     initGlfw("window")
@@ -430,6 +455,8 @@ func main() {
     initScene()
 
     glfw.SetKeyCallback("window","keyControl")
+    glfw.SetMouseButtonCallback("window", "clickMouseEvents")
+    glfw.SetCursorPosCallback("window","updateMousePosition")
     
 	var timer f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
@@ -437,7 +464,7 @@ func main() {
 		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
     	gl.UseProgram(program)
 		
-		drawPassiveTexture()
+		drawBoard()
 		
         glfw.PollEvents()
         glfw.SwapBuffers("window")

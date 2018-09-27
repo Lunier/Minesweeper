@@ -1,4 +1,4 @@
-package stuff
+package dependecies
 
 type Position2D struct {
     x f32
@@ -51,17 +51,19 @@ func (p Dimension2D) setYPosition (new_height f32) {
 type Cell struct {
     position Position2D
     dimension Dimension2D
+    currTexture i32
     activeTexture i32
 	passiveTexture i32
 }
 
-func newCell (pos Position2D, dim Dimension2D, activeTex i32) (cell Cell) {
+func newCell (pos Position2D, dim Dimension2D, passiveTex i32) (cell Cell) {
     var cell Cell
     cell = Cell {
     	position: pos,
 		dimension: dim,
-		activeTexture: activeTex,
-		passiveTexture: 0}
+		passiveTexture: passiveTex,
+		currTexture: passiveTex,
+		activeTexture: 0}
 
     return cell
 }
