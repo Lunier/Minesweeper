@@ -13,7 +13,8 @@ var once bool
 var MINES i32 = 60
 
 //global texture
-var defaultTex i32
+var activeDefaultTex i32
+var passiveDefaultTex i32
 var oneTex i32
 var twoTex i32
 var threeTex i32
@@ -23,6 +24,7 @@ var sixTex i32
 var sevenTex i32
 var eightTex i32
 var mineTex i32
+var flagTex i32
 
 //Boolean to determine if the user wants to restart the game
 var restart bool = false
@@ -85,7 +87,8 @@ func initTextures() (){
 	var wd str
 	wd = str.concat(os.GetWorkingDirectory(),"textures/")
 	
-	defaultTex = gl.NewTexture(sprintf("%sdefault.png",wd))
+	activeDefaultTex = gl.NewTexture(sprintf("%sactiveDefault.png",wd))
+	passiveDefaultTex = gl.NewTexture(sprintf("%spassiveDefault.png",wd))
 	oneTex = gl.NewTexture(sprintf("%s1.png",wd))
 	twoTex = gl.NewTexture(sprintf("%s2.png",wd))
 	threeTex = gl.NewTexture(sprintf("%s3.png",wd))
@@ -95,6 +98,7 @@ func initTextures() (){
 	sevenTex = gl.NewTexture(sprintf("%s7.png",wd))
 	eightTex = gl.NewTexture(sprintf("%s8.png",wd))
 	mineTex = gl.NewTexture(sprintf("%smine.png",wd))
+	flagTex = gl.NewTexture(sprintf("%sflag.png",wd))
 }
 
 func setupCellSpecs() (){
@@ -132,7 +136,7 @@ func initGamefield()(){
     {
 		for j=0; j < CELLS_X; j++
 		{
-			gamefield[i][j] = initCell(i,j,defaultTex)
+			gamefield[i][j] = initCell(i,j,passiveDefaultTex)
 		}
     }
 }
@@ -195,7 +199,7 @@ func drawBoard()(){
    Output       : 
    Desctription : prints the gamefield to the Screen
 */
-func drawActiveTexture()(){
+func drawActiveBoard()(){
     var i i32
     var j i32
 
@@ -336,7 +340,7 @@ func checkNeighbours(y i32, x i32)(counter i32){
 	//check bottom middle,left,right neighbours
 	xTemp = x
 	yTemp = i32.add(y,1)
-	if i32.gt(yTemp,-1){
+	if i32.lt(yTemp,20){
 		if i32.eq(gamefield[yTemp][xTemp].activeTexture,mineTex){
 			counter = i32.add(counter,1)
 		}
@@ -363,39 +367,47 @@ func checkNeighbours(y i32, x i32)(counter i32){
 func setNumber(y i32, x i32, number i32)() {
 	
 	if i32.eq(number,0){
-		gamefield[y][x].activeTexture = defaultTex
+		gamefield[y][x].activeTexture = activeDefaultTex
 	}
 	
 	if (number == 1){
 		gamefield[y][x].activeTexture = oneTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 2){
 		gamefield[y][x].activeTexture = twoTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 3){
 		gamefield[y][x].activeTexture = threeTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 4){
 		gamefield[y][x].activeTexture = fourTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 5){
 		gamefield[y][x].activeTexture = fiveTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 6){
 		gamefield[y][x].activeTexture = sixTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 7){
 		gamefield[y][x].activeTexture = sevenTex
+		gamefield[y][x].number = true
 	}
 	
 	if (number == 8){
 		gamefield[y][x].activeTexture = eightTex
+		gamefield[y][x].number = true
 	}
 	
 }
@@ -420,19 +432,101 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
 func clickMouseEvents(window str, key i32, action i32, mods i32)(){
 	if i32.eq(key, glfw.MouseButtonLeft) {
 		if action == glfw.Press {
-			//printf("clicked")
-			revealField()
+			//printf("left clicked")
+			prepareRevelation()
+		}
+	}
+	if i32.eq(key, glfw.MouseButtonRight) {
+		if action == glfw.Press {
+			//printf("right clicked")
+			setFlag()
 		}
 	}
 }
 
-func revealField()(){
+func setFlag()(){
 	calculateMouseToCell()
 	var y i32 = mousePosition.realY
 	var x i32 = mousePosition.realX
-	gamefield[y][x].currTexture = gamefield[y][x].activeTexture
+	if bool.eq(gamefield[y][x].open,false){
+		gamefield[y][x].currTexture = flagTex
+	}
 }
 
+func prepareRevelation()(){
+	calculateMouseToCell()
+	var y i32 = mousePosition.realY
+	var x i32 = mousePosition.realX
+	revealFields(y,x)
+}
+
+func revealFields(y i32, x i32)(){
+	if bool.eq(gamefield[y][x].open,false){
+		reveal(y,x)
+		if (gamefield[y][x].number){
+			return
+		}
+		
+		var yTemp i32 = y
+		var xTemp i32 = x
+		//check top middle,left,right
+		yTemp = i32.sub(y,1)
+		if i32.gt(yTemp,-1){
+			//check top middle
+			revealFields(yTemp,xTemp)
+			
+			//check top left
+			xTemp = i32.sub(x,1)
+			if i32.gt(xTemp,-1){
+				revealFields(yTemp,xTemp)
+			}
+			
+			//check top right
+			xTemp = i32.add(x,1)
+			if i32.lt(xTemp,20){
+				revealFields(yTemp,xTemp)
+			}
+		}
+		
+		
+		//check left,right neighbours
+		yTemp = y
+		xTemp = i32.sub(x,1)
+		if i32.gt(xTemp,-1){
+			revealFields(yTemp,xTemp)
+		}
+		xTemp = i32.add(x,1)
+		if i32.lt(xTemp,20){
+			revealFields(yTemp,xTemp)
+		}
+		
+		
+		//check bottom middle,left,right neighbours
+		xTemp = x
+		yTemp = i32.add(y,1)
+		if i32.lt(yTemp,20){
+			revealFields(yTemp,xTemp)
+			
+			xTemp = i32.sub(x,1)
+			if i32.gt(xTemp,-1){
+				revealFields(yTemp,xTemp)
+			}
+			
+			xTemp = i32.add(x,1)
+			if i32.lt(xTemp,20){
+				revealFields(yTemp,xTemp)
+			}
+		
+		}
+	
+	}	
+}
+
+func reveal(y i32, x i32)(){
+	//printf("opened field at y: %d   x: %d\n",y,x)
+	gamefield[y][x].open = true	
+	gamefield[y][x].currTexture = gamefield[y][x].activeTexture
+}
 func calculateMouseToCell()(){
 	mousePosition.realX = i32.div(f32.i32(mousePosition.x),f32.i32(CELLS_WIDTH_PX))
 	mousePosition.realY = i32.div(f32.i32(mousePosition.y),f32.i32(CELLS_HEIGHT_PX))
