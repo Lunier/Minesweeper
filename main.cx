@@ -67,8 +67,7 @@ var flags i32
 
 var gamefield [24][24]dependecies.Cell
 
-// easy = 8 | medium = 16 | expert = 24
-var gamefieldSize i32 = 8
+var gamefieldSize i32
 
 var mousePosition dependecies.Position2D
 
@@ -655,7 +654,8 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
 
 func main() {
 	
-
+	// easy = 8 | medium = 16 | expert = 24
+	gamefieldSize = 16
     initGlfw("window")
     var program i32 = initGl()
 	
