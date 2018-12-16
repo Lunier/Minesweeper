@@ -10,8 +10,7 @@ import "os"
 var NUMBER i32 = 20
 
 //to print out the printScore method only once
-var won bool
-var lost bool
+var once bool
 
 //global texture
 var activeDefaultTex i32
@@ -45,30 +44,25 @@ var RIGHT i32 = 3
 
 //HeaderSize
 var MENU_WIDTH i32 = 720
-var MENU_HEIGHT i32 = 100
+var MENU_HEIGHT i32 = 200
 
 //WindowSize
-var GAME_WIDTH i32 = 720
-var GAME_HEIGHT i32 = 720
-
-//Window Size
 var WINDOW_WIDTH i32 = 720
-var WINDOW_HEIGHT i32 = 820
+var WINDOW_HEIGHT i32 = 720
 
 //Width and Height of a Cell
 var CELLS_WIDTH_PX f32 = 0.0
 var CELLS_HEIGHT_PX f32 = 0.0
+var CELLS_WIDTH_SC f32 = 0.0
+var CELLS_HEIGHT_SC f32 = 0.0
 
 //amount of mines on the map
 var MINES i32
 
-//amount of flags on the map
-var flags i32
-
 var gamefield [24][24]dependecies.Cell
 
 // easy = 8 | medium = 16 | expert = 24
-var gamefieldSize i32 = 8
+var gamefieldSize i32 = 24
 
 var mousePosition dependecies.Position2D
 
@@ -114,8 +108,10 @@ func initTextures() (){
 }
 
 func setupCellSpecs() (){
-    CELLS_WIDTH_PX = f32.div(i32.f32(GAME_WIDTH),i32.f32(gamefieldSize))
-    CELLS_HEIGHT_PX = f32.div(i32.f32(GAME_HEIGHT),i32.f32(gamefieldSize))
+    CELLS_WIDTH_PX = f32.div(i32.f32(WINDOW_WIDTH),i32.f32(gamefieldSize))
+    CELLS_HEIGHT_PX = f32.div(i32.f32(WINDOW_HEIGHT),i32.f32(gamefieldSize))
+	CELLS_WIDTH_SC = f32.div(2.0, i32.f32(gamefieldSize))
+	CELLS_HEIGHT_SC = f32.div(2.0, i32.f32(gamefieldSize))
 }
 
 /* Function     : initScene
@@ -177,10 +173,9 @@ func initCell(line i32, column i32, tex i32) (cell dependecies.Cell) {
    Desctription : Calculates the screen position according to the line and column -> between -1 and 1
 */
 func indexToPosition (line i32, column i32) (pos dependecies.Position2D){
-    var x f32 = f32.mul(i32.f32(column),CELLS_WIDTH_PX)
-    var y f32 = f32.add(f32.mul(i32.f32(line),CELLS_HEIGHT_PX),i32.f32(MENU_HEIGHT))
-	//printf("%d - %d at x: %f y: %f\n",column,line,x,y)
-    pos = dependecies.newPosition2D(x,y)
+    var x f32 = f32.add(f32.add(-1.0, f32.mul(i32.f32(column),CELLS_WIDTH_SC)),f32.div(CELLS_WIDTH_SC,2.0))
+    var y f32 = f32.sub(f32.sub( 1.0, f32.mul(i32.f32(line),CELLS_HEIGHT_SC)), f32.div(CELLS_HEIGHT_SC,2.0))
+    pos = dependecies.newPosition2D(x,y,column,line)
 
     return pos
 }
@@ -203,10 +198,10 @@ func drawBoard()(){
     }
 }
 
-/* Function     : drawActiveBoard
+/* Function     : drawBoard
    Input        : 
    Output       : 
-   Desctription : prints the activeTexture of the gamefield the Screen
+   Desctription : prints the gamefield to the Screen
 */
 func drawActiveBoard()(){
     var i i32
@@ -227,30 +222,27 @@ func drawActiveBoard()(){
    	Desctription : prints the Cell to the Screen
 */
 func drawCell(pos dependecies.Position2D, dim dependecies.Dimension2D, tex i32) (){
-	gl.MatrixMode(gl.PROJECTION)
-	gl.LoadIdentity()
-	gl.Ortho(0.0D,i32.f64(WINDOW_WIDTH),i32.f64(WINDOW_HEIGHT),0.0D,-1.0D,1.0D)
-
-	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
 	gl.BindTexture(gl.TEXTURE_2D, tex)
+
+	gl.Translatef(pos.x, pos.y, 0.0)
+	gl.Scalef(scale(dim.width,WINDOW_WIDTH), scale(dim.height,WINDOW_HEIGHT), 0.0)
+	//gl.Rotatef(0.0, 0.0, 0.0, 1.0);
 	gl.Begin(gl.QUADS)
 
 	gl.TexCoord2d(0.0D, 0.0D);
-	gl.Vertex2f(pos.x,pos.y);
-
-	gl.TexCoord2d(0.0D, 1.0D);
-	gl.Vertex2f(pos.x,pos.y  + CELLS_HEIGHT_PX);
-
-	gl.TexCoord2d(1.0D, 1.0D);
-	gl.Vertex2f(pos.x + CELLS_WIDTH_PX ,pos.y + CELLS_HEIGHT_PX);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
 
 	gl.TexCoord2d(1.0D, 0.0D);
-	gl.Vertex2f(pos.x + CELLS_WIDTH_PX ,pos.y);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
 
 	gl.End();
-	
-	//gl.Flush
 }
 
 func scale(numerator f32, denominator i32) (result f32) {
@@ -439,53 +431,44 @@ func renderScreen()(){
     drawBoard()
 }
 
+/* 	Function     : keyControl
+	Input		 : ?!?
+	Output		 : 
+   	Desctription : Calls the change direction method or restarts the game
+*/
+func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
+    
+}
+
 func clickMouseEvents(window str, key i32, action i32, mods i32)(){
-	if bool.and(lost==false,won==false){
-		if f32.gteq(mousePosition.y,i32.f32(MENU_HEIGHT)){
-			if i32.eq(key, glfw.MouseButtonLeft) {
-				if action == glfw.Press {
-					//printf("left clicked")
-					prepareRevelation()
-				}
-			}
-			if i32.eq(key, glfw.MouseButtonRight) {
-				if action == glfw.Press {
-					//printf("right clicked")
-					setFlag()
-				}
-			}
+	if i32.eq(key, glfw.MouseButtonLeft) {
+		if action == glfw.Press {
+			//printf("left clicked")
+			prepareRevelation()
+		}
+	}
+	if i32.eq(key, glfw.MouseButtonRight) {
+		if action == glfw.Press {
+			//printf("right clicked")
+			setFlag()
 		}
 	}
 }
 
 func setFlag()(){
-	var pos dependecies.Position2D
-	pos = calculateMouseToCell()
-	var y i32 = f32.i32(pos.y)
-	var x i32 = f32.i32(pos.x)
+	calculateMouseToCell()
+	var y i32 = mousePosition.realY
+	var x i32 = mousePosition.realX
 	if bool.eq(gamefield[y][x].open,false){
-		if i32.eq(gamefield[y][x].currTexture,flagTex){
-			gamefield[y][x].currTexture = gamefield[y][x].passiveTexture
-			flags = flags - 1
-		} else {
-			gamefield[y][x].currTexture = flagTex
-			flags = flags + 1
-		}
+		gamefield[y][x].currTexture = flagTex
 	}
 }
 
 func prepareRevelation()(){
-	var pos dependecies.Position2D
-	pos = calculateMouseToCell()
-	var y i32 = f32.i32(pos.y)
-	var x i32 = f32.i32(pos.x)
-	if i32.eq(mineTex,gamefield[y][x].activeTexture){
-		lost = true
-		revealAllBombs()
-	} else {
-		revealFields(y,x)
-		checkIfWon()
-	}
+	calculateMouseToCell()
+	var y i32 = mousePosition.realY
+	var x i32 = mousePosition.realX
+	revealFields(y,x)
 }
 
 func revealFields(y i32, x i32)(){
@@ -555,47 +538,9 @@ func revealField(y i32, x i32)(){
 	gamefield[y][x].open = true	
 	gamefield[y][x].currTexture = gamefield[y][x].activeTexture
 }
-
-func revealAllBombs()(){
-    var i i32
-    var j i32
-
-    for i = 0; i < gamefieldSize; i++{
-
-		for j=0; j < gamefieldSize; j++{
-
-			if i32.eq(gamefield[i][j].activeTexture,mineTex){
-				revealField(i,j)
-			}
-		}
-    }
-}
-
-func checkIfWon()(){
-	var fields i32 = gamefieldSize * gamefieldSize - MINES
-	
-	var i i32
-	var j i32
-	var amount i32 = 0
-
-	for i = 0; i < gamefieldSize; i++{
-		for j = 0; j < gamefieldSize; j++{
-			if bool.eq(gamefield[i][j].open,true){
-				amount = amount + 1
-			}
-		}
-	}
-
-	if i32.eq(amount,fields){
-		won = true
-	}
-}
-
-func calculateMouseToCell()(position dependecies.Position2D){
-	var yPos i32 = i32.div(f32.i32(mousePosition.y) - MENU_HEIGHT, f32.i32(CELLS_HEIGHT_PX))
-	var xPos i32 = i32.div(f32.i32(mousePosition.x), f32.i32(CELLS_WIDTH_PX))
-	position = dependecies.newPosition2D(i32.f32(xPos),i32.f32(yPos))
-	return position
+func calculateMouseToCell()(){
+	mousePosition.realX = i32.div(f32.i32(mousePosition.x),f32.i32(CELLS_WIDTH_PX))
+	mousePosition.realY = i32.div(f32.i32(mousePosition.y),f32.i32(CELLS_HEIGHT_PX))
 }
 
 func updateMousePosition(window str, xpos f64, ypos f64)(){
@@ -603,68 +548,14 @@ func updateMousePosition(window str, xpos f64, ypos f64)(){
 	mousePosition.y = f64.f32(ypos)
 }
 
-func setupText()(){
-	var wd str
-	wd = os.GetWorkingDirectory()
-	fontFile := str.concat(wd, "fonts/roboto-light.ttf")
-
-	os.Open(fontFile)
-	gltext.LoadTrueType("Roboto100", fontFile, 100, 32, 127, gltext.LeftToRight)
-	os.Close(fontFile)
-	
-	os.Open(fontFile)
-	gltext.LoadTrueType("Roboto50", fontFile, 50, 32, 127, gltext.LeftToRight)
-	os.Close(fontFile)
-
-	os.Open(fontFile)
-	gltext.LoadTrueType("Roboto30", fontFile, 30, 32, 127, gltext.LeftToRight)
-	os.Close(fontFile)
-
-}
-
-func printMenu()(){
-	var menuText str
-	menuText = str.concat("Mines:",i32.str(i32.sub(MINES,flags))) 
-	gltext.Printf("Roboto50",275.0, 30.0, menuText)
-}
-
-func printLost()(){
-	var lostText str 
-	lostText = "You lost"
-	gltext.Printf("Roboto50",275.0, 30.0, lostText)
-}
-
-func printWon()(){
-	var wonText str 
-	wonText = "You won"
-	gltext.Printf("Roboto50",275.0, 30.0, wonText)
-}
-
-
-/* 	Function     : keyControl
-	Input		 : ?!?
-	Output		 : 
-   	Desctription : Restarts the game
-*/
-func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
-	if bool.and(i32.eq(key, ENTER_KEY), i32.eq(action, 1)){
-		restart = true
-	}
-}
-
-
 func main() {
-	
 
     initGlfw("window")
     var program i32 = initGl()
-	
+
 	new_game:
-    setupCellSpecs()
-	won = false
-	flags = 0
 	restart = false
-	setupText()
+    setupCellSpecs()
 	initTextures()
     initScene()
 
@@ -672,27 +563,14 @@ func main() {
     glfw.SetMouseButtonCallback("window", "clickMouseEvents")
     glfw.SetCursorPosCallback("window","updateMousePosition")
     
-	lost = false
+	var timer f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
 		
 		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
-		gl.UseProgram(program)
+    		gl.UseProgram(program)
 		
 		drawBoard()
-		if lost == true{
-			printLost()
-		} else {
-			if won == true{
-				printWon()
-			} else {
-				printMenu()
-			}
-		}
-
-		if restart == true{
-			goto new_game
-		}		
-
+		
         glfw.PollEvents()
         glfw.SwapBuffers("window")
     }

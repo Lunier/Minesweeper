@@ -3,12 +3,16 @@ package dependecies
 type Position2D struct {
     x f32
     y f32
+    realX i32
+    realY i32
 }
 
-func newPosition2D (xPos f32, yPos f32) (position Position2D) {
+func newPosition2D (xPos f32, yPos f32,rxPos i32, ryPos i32) (position Position2D) {
     position = Position2D {
         x : xPos,
-	y : yPos}
+		y : yPos,
+		realX : rxPos,
+		realY : ryPos}
     return position
 }
 
